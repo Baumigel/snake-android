@@ -60,13 +60,15 @@ public class SnakeView extends SurfaceView implements Runnable, SensorEventListe
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        initGame();
+        if (COLS > 0 && ROWS > 0) {
+            initGame();
+        }
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        COLS = width / BLOCK_SIZE;
-        ROWS = height / BLOCK_SIZE;
+        COLS = Math.max(1, width / BLOCK_SIZE);
+        ROWS = Math.max(1, height / BLOCK_SIZE);
     }
 
     @Override
@@ -94,11 +96,21 @@ public class SnakeView extends SurfaceView implements Runnable, SensorEventListe
     }
 
     private void spawnFood() {
-        food = new int[]{random.nextInt(COLS), random.nextInt(ROWS)};
-        for (int[] segment : snake) {
-            if (segment[0] == food[0] && segment[1] == food[1]) {
-                spawnFood();
-                return;
+        boolean validPosition = false;
+        while (!validPosition) {
+            int x = random.nextInt(COLS);
+            int y = random.nextInt(ROWS);
+            
+            if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+                food = new int[]{x, y};
+                validPosition = true;
+                
+                for (int[] segment : snake) {
+                    if (segment[0] == food[0] && segment[1] == food[1]) {
+                        validPosition = false;
+                        break;
+                    }
+                }
             }
         }
     }
