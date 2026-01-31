@@ -16,7 +16,7 @@ import android.view.SurfaceView;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class SnakeView extends SurfaceView implements Runnable, SensorEventListener {
+public class SnakeView extends SurfaceView implements Runnable, SensorEventListener, SurfaceHolder.Callback {
 
     private Thread gameThread;
     private boolean isPlaying;
@@ -26,7 +26,7 @@ public class SnakeView extends SurfaceView implements Runnable, SensorEventListe
 
     private final int BLOCK_SIZE = 30;
     private final int GAME_SPEED = 150;
-    private final int COLS, ROWS;
+    private int COLS, ROWS;
 
     private ArrayList<int[]> snake;
     private int[] food;
@@ -44,6 +44,7 @@ public class SnakeView extends SurfaceView implements Runnable, SensorEventListe
     public SnakeView(Context context) {
         super(context);
         surfaceHolder = getHolder();
+        surfaceHolder.addCallback(this);
         paint = new Paint();
         random = new Random();
         handler = new Handler();
@@ -51,12 +52,26 @@ public class SnakeView extends SurfaceView implements Runnable, SensorEventListe
         COLS = getResources().getDisplayMetrics().widthPixels / BLOCK_SIZE;
         ROWS = getResources().getDisplayMetrics().heightPixels / BLOCK_SIZE;
 
-        initGame();
-
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         setFocusable(true);
+    }
+
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+        initGame();
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        COLS = width / BLOCK_SIZE;
+        ROWS = height / BLOCK_SIZE;
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        pause();
     }
 
     private void initGame() {
@@ -71,6 +86,11 @@ public class SnakeView extends SurfaceView implements Runnable, SensorEventListe
         gameOver = false;
 
         spawnFood();
+    }
+
+    private void restartGame() {
+        snake.clear();
+        initGame();
     }
 
     private void spawnFood() {
@@ -97,7 +117,7 @@ public class SnakeView extends SurfaceView implements Runnable, SensorEventListe
     }
 
     private void update() {
-        if (gameOver) return;
+        if (gameOver || snake == null) return;
 
         direction = nextDirection;
         int[] head = snake.get(0).clone();
@@ -185,8 +205,7 @@ public class SnakeView extends SurfaceView implements Runnable, SensorEventListe
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (gameOver) {
-                initGame();
-                gameOver = false;
+                restartGame();
             } else {
                 float x = event.getX();
                 float y = event.getY();
